@@ -33,6 +33,7 @@ args = ap.parse_args()
 if __name__ == "__main__":
 
     logging.info('Start Processing...')
+    os.makedirs(args.out, exist_ok=True)
 
     # Input is a image or directory of images
     if '.' not in args.input:

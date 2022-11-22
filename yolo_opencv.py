@@ -22,12 +22,14 @@ class results:
         self.class_ids = class_ids
         self.confidences = confidences
 
-    def get_NMS(self):
+    def get_NMS(self): # Get result after NMS
         boxes = []
         class_ids = []
         confidences = []
         try:
+            
             for i in self.indices:
+                
                 try:
                     box = self.boxes[i]
                 except:
@@ -56,34 +58,99 @@ class results:
 
         return results_NMS
 
-    def draw(self, image):
+    def draw(self, img, classes = None, colors = None, NMS = True): # Draw bounding boxes on the image
+        image = img.copy()
+        if classes is not None:
+            with open(classes, 'r') as f:
+                    classes = [line.strip() for line in f.readlines()]
 
-        for box, class_id, confidence in zip(self.boxes, self.class_ids, self.confidences):
-            x = round(box[0])
-            y = round(box[1])
-            w = round(box[2])
-            h = round(box[3])
-            
-            cv2.rectangle(image, (x, y), (x + w, y + h), (0, 255, 0), 2)
+            COLORS = np.random.uniform(0, 255, size=(len(classes), 3))
+        
+        if NMS:
+            for i in self.indices:
 
-            logging.info(
-                f'- Detection - class: {class_id} - confidence: {confidence}')
-            logging.info(
-                f'- bbox - x: {round(x)} - y: {round(y)} - w: {round(w)} - h: {round(h)}')
+                try:
+                    box = self.boxes[i]
+                except:
+                    i = i[0]
+                    box = self.boxes[i]
+
+                x = round(box[0])
+                y = round(box[1])
+                w = round(box[2])
+                h = round(box[3])
+                class_id = self.class_ids[i]
+                confidence = self.confidences[i]
+
+                if classes is None:
+                    cv2.rectangle(image, (x, y), (x + w, y + h), (0, 255, 0), 2)
+                elif colors is None:
+                    label = str(classes[class_id])
+
+                    cv2.rectangle(image, (x, y), (x + w, y + h),
+                                  (0, 255, 0), 2)
+
+                    cv2.putText(image, label, (x-10, y-10),
+                                cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 2)
+                else:
+                    label = str(classes[class_id])
+                    color = colors[class_id]
+
+                    cv2.rectangle(image, (x, y), (x + w, y + h), color, 2)
+
+                    cv2.putText(image, label, (x-10, y-10),
+                                cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 2)
+
+                logging.info(
+                    f'- Detection - class: {class_id} - confidence: {confidence}')
+                logging.info(
+                    f'- bbox - x: {x} - y: {y} - w: {w} - h: {h}')
+        else:
+            for box, class_id, confidence in zip(self.boxes, self.class_ids, self.confidences):
+                x = round(box[0])
+                y = round(box[1])
+                w = round(box[2])
+                h = round(box[3])
+
+                if classes is None:
+                    cv2.rectangle(image, (x, y), (x + w, y + h),
+                                  (0, 255, 0), 2)
+                elif colors == None:
+                    label = str(classes[class_id])
+
+                    cv2.rectangle(image, (x, y), (x + w, y + h),
+                                  (0, 255, 0), 2)
+
+                    cv2.putText(image, label, (x-10, y-10),
+                                cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 2)
+                else:
+                    label = str(classes[class_id])
+                    color = colors[class_id]
+
+                    cv2.rectangle(image, (x, y), (x + w, y + h), color, 2)
+
+                    cv2.putText(image, label, (x-10, y-10),
+                                cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 2)
+
+                logging.info(
+                    f'- Detection - class: {class_id} - confidence: {confidence}')
+                logging.info(
+                    f'- bbox - x: {round(x)} - y: {round(y)} - w: {round(w)} - h: {round(h)}')
 
         return image
 
 class yolo:
-    def __init__(self, input, out, weights, config, classes):
+    def __init__(self, input, model, weights, config, classes,  out ="out", search = None):
         self.input = input
         self.out = out
+        self.model = model
         self.weights = weights
         self.config = config
         self.classes = classes
-        self.colors = self.colors()
+        self.colors = self.setUpColors()
         self.filename = self.input.split('/')[-1]
         self.results = None
-        self.search = None
+        self.search = search
         self.image = None
     
     def __init__(self, args):
@@ -93,8 +160,7 @@ class yolo:
         self.weights = args.model + '.weights'
         self.config = args.model + '.cfg'
         self.classes = args.classes
-
-        self.colors = self.colors()
+        self.colors = self.setUpColors()
         self.filename = self.input.split('/')[-1]
         self.results = None
         self.search = args.search
@@ -129,35 +195,28 @@ class yolo:
 
         return output_layers
     
-    def colors(self):
+    def get_classes(self):
         classes = None
 
         with open(self.classes, 'r') as f:
             classes = [line.strip() for line in f.readlines()]
 
+        return classes
+
+    def setUpColors(self):
+        classes = self.get_classes()
+
         COLORS = np.random.uniform(0, 255, size=(len(classes), 3))
 
-        return [classes, COLORS]
+        return COLORS
 
-    def draw_prediction(self, img, class_id, confidence, x, y, x_plus_w, y_plus_h):
-        
-        #classes, COLORS = self.colors()
-        classes, COLORS = self.colors[0], self.colors[1]
-        label = str(classes[class_id])
-        color = COLORS[class_id]
-
-        cv2.rectangle(img, (x, y), (x_plus_w, y_plus_h), color, 2)
-
-        cv2.putText(img, label, (x-10, y-10),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,0,0), 2)
-
-    def save(self, path = None):
+    def save(self, image, path = None):
         if path is None:
             path = self.out + '/'
         elif '/' not in path:
             path = self.out + '/' + path
 
-        cv2.imwrite(path, self.image)
+        cv2.imwrite(path, image)
         logging.info(f'- Saved image : {path}')
 
     def detect(self, image = None, search = None):
@@ -166,11 +225,11 @@ class yolo:
             self.search = search
         
         if image is None:
-            logging.info(f'- Loaded image : {self.input}')
             self.image = cv2.imread(self.input)
         else:
             self.image = image
 
+        logging.info(f'- Loaded image : {self.input}')
         Width = self.image.shape[1]
         Height = self.image.shape[0]
         scale = 0.00392
@@ -223,45 +282,6 @@ class yolo:
         indices = cv2.dnn.NMSBoxes(boxes, confidences, conf_threshold, nms_threshold)
         
         return results(indices, boxes, class_ids, confidences)
-
-    def draw(self, results):
-        
-        try:
-            for i in results.indices:
-                try:
-                    box = results.boxes[i]
-                except:
-                    i = i[0]
-                    box = results.boxes[i]
-
-                x = box[0]
-                y = box[1]
-                w = box[2]
-                h = box[3]
-
-                box = [x, y, w, h]
-                class_id = results.class_ids[i]
-                confidence = results.confidences[i]
-
-                self.draw_prediction(self.image, results.class_ids[i], results.confidences[i], round(
-                    x), round(y), round(x+w), round(y+h))
-
-                logging.info(
-                    f'- Detection - class: {class_id} - confidence: {confidence}')
-                logging.info(
-                    f'- bbox - x: {round(x)} - y: {round(y)} - w: {round(w)} - h: {round(h)}')
-        except:
-            for box, class_id, confidence in zip(results.boxes, results.class_ids, results.confidences):
-                x = box[0]
-                y = box[1]
-                w = box[2]
-                h = box[3]
-                self.draw_prediction(self.image, class_id, confidence, round(
-                    x), round(y), round(x+w), round(y+h))
-                logging.info(
-                    f'- Detection - class: {class_id} - confidence: {confidence}')
-                logging.info(
-                    f'- bbox - x: {round(x)} - y: {round(y)} - w: {round(w)} - h: {round(h)}')
 
         #cv2.imshow("object detection", image)
         #cv2.waitKey()

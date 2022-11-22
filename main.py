@@ -52,10 +52,14 @@ if __name__ == "__main__":
             for filename in list:
                 yolo.input = args.input[:args.input.find('/')+1] + filename
                 yolo.filename = filename
+                
+                image = cv2.imread(yolo.input)
 
-                results = yolo.detect()
-                yolo.draw(results)
-                yolo.save(f'{yolo.filename.split(".")[0] }-object-detection.jpg')
+                results = yolo.detect(image)
+                image_detected = results.draw(image, yolo.classes)
+
+                yolo.save(image_detected, f'{yolo.filename.split(".")[0]}-object-detection.jpg')
+
                 progress.update(task1, advance=1)
 
             logging.info(
@@ -69,9 +73,12 @@ if __name__ == "__main__":
         
         yolo = yolo(args)
         results = yolo.detect()
-        yolo.draw(results.get_NMS())
-        
-        yolo.save(f'{yolo.filename.split(".")[0] }-object-detection.jpg')
+        image = cv2.imread(yolo.input)
+
+        results = yolo.detect(image)
+        image_detected = results.draw(image, yolo.classes)
+        yolo.save(image_detected,
+                  f'{yolo.filename.split(".")[0]}-object-detection.jpg')
 
         logging.info(
             f'- Completed!')
@@ -99,16 +106,16 @@ if __name__ == "__main__":
         yolo = yolo(args)
         with Progress() as progress:
             bar = progress.add_task("[red]Processing...", total=frame_count)
-            while success:
+            while success and count <= 10:
                 success, image = vidcap.read()
                 
                 logging.info(
                     f'- Read a new frame {count}: {success}')
                 results = yolo.detect(image)
-                yolo.draw(results)
+                image_detected = results.draw(image, yolo.classes, yolo.colors)
     
                 cv2.imwrite(args.out + '/' + "frame%d.jpg" %
-                            count, yolo.image)     # save frame as JPEG file
+                            count, image_detected)     # save frame as JPEG file
                 count += 1
                 progress.update(bar, advance=1)
 

@@ -87,8 +87,8 @@ if __name__ == "__main__":
         logging.info(
             f'- Input is a video : {args.input}')
         name_video = args.input.split('/')[-1].split('.')[0]
-        os.makedirs(args.out + '/' + name_video, exist_ok=True)
-        args.out = args.out + '/' + name_video 
+        args.out = os.path.join(args.out, name_video)
+        os.makedirs(args.out, exist_ok=True)        
 
         # Read the video
         vidcap = cv2.VideoCapture(args.input)
@@ -98,7 +98,7 @@ if __name__ == "__main__":
         duration = frame_count/fps
         
         logging.info(f'- Video duration: {duration} seconds'
-                     f' - {frame_count} frames')
+                     f' - {frame_count} frames - {round(fps,2)} fps')
 
         success, image = vidcap.read()
         count = 0
@@ -111,7 +111,7 @@ if __name__ == "__main__":
                 
                 logging.info(
                     f'- Read a new frame {count}: {success}')
-                results = yolo.detect(image)
+                results = yolo.detect(image, 15)
                 image_detected = results.draw(image, yolo.classes, yolo.colors)
     
                 cv2.imwrite(args.out + '/' + "frame%d.jpg" %

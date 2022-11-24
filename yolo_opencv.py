@@ -222,14 +222,16 @@ class yolo:
     def detect(self, image = None, search = None):
         
         if search != None:
-            self.search = search
+            if type(search) == int:
+                self.search = self.get_class_name(search)
+            else:
+                self.search = search
         
         if image is None:
             self.image = cv2.imread(self.input)
         else:
             self.image = image
 
-        logging.info(f'- Loaded image : {self.input}')
         Width = self.image.shape[1]
         Height = self.image.shape[0]
         scale = 0.00392
@@ -277,7 +279,8 @@ class yolo:
                     confidences.append(float(confidence))
                     boxes.append([x, y, w, h])
                 
-        if self.search is not None : logging.info(f'- Found {self.search} in image')
+        if self.search is not None and self.search == self.get_class_name(class_id):
+            logging.info(f'- Found {self.search} in image')
         
         indices = cv2.dnn.NMSBoxes(boxes, confidences, conf_threshold, nms_threshold)
         

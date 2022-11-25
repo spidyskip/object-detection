@@ -3,8 +3,6 @@ import argparse
 from yolo_opencv import yolo
 import os
 import logging
-import numpy as np
-from datetime import datetime
 
 import cv2
 from rich.progress import Progress
@@ -28,98 +26,108 @@ ap.add_argument('-o', '--out', required=False, default='out',
                 help='path to output image')
 args = ap.parse_args()
 
+def folder():
+    global yolo, list
+    args.input = args.input + '/'
 
+    logging.info(
+        f' Porcessing all images in the directory  {args.input}')
 
-if __name__ == "__main__":
+    yolo = yolo(args)
+    # Detect all image files in the folder
+    with Progress() as progress:
+        list = list([i for i in os.listdir(args.input) if i.lower().endswith(
+            '.jpg') or i.lower().endswith('.png')])
+        task1 = progress.add_task("[blue]Processing...", total=len(list))
 
-    logging.info('Start Processing...')
+        for filename in list:
+            yolo.input = args.input[:args.input.find('/')+1] + filename
+            yolo.filename = filename
+
+            image = cv2.imread(yolo.input)
+
+            results = yolo.detect(image)
+            image_detected = results.draw(image, yolo.classes)
+
+            yolo.save(image_detected,
+                        f'{yolo.filename.split(".")[0]}-object-detection.jpg')
+
+            progress.update(task1, advance=1)
+
+        logging.info(
+            f' Completed!')
+
+def image():
+    global yolo
+    logging.info(
+        f' Input is a single image : {args.input}')
+
+    yolo = yolo(args)
+    results = yolo.detect()
+    image = cv2.imread(yolo.input)
+
+    results = yolo.detect(image)
+    image_detected = results.draw(image, yolo.classes)
+    yolo.save(image_detected,
+              f'{yolo.filename.split(".")[0]}-object-detection.jpg')
+
+    logging.info(
+        f' Completed!')
+
+def video():
+    global yolo
+    logging.info(
+        f' Input is a video : {args.input}')
+    name_video = args.input.split('/')[-1].split('.')[0]
+    args.out = os.path.join(args.out, name_video)
     os.makedirs(args.out, exist_ok=True)
 
-    # Input is a image or directory of images
-    if '.' not in args.input:
-        args.input = args.input + '/'
+    # Read the video
+    vidcap = cv2.VideoCapture(args.input)
 
-        logging.info(
-            f'- Porcessing all images in the directory -> {args.input}')
-        
-        yolo = yolo(args)
-        # Detect all image files in the folder
-        with Progress() as progress:
-            list = list([i for i in os.listdir(args.input) if i.lower().endswith(
-                '.jpg') or i.lower().endswith('.png')])
-            task1 = progress.add_task("[blue]Processing...", total=len(list))
+    # OpenCV v2.x used "CV_CAP_PROP_FPS"
+    fps = vidcap.get(cv2.CAP_PROP_FPS)
+    frame_count = int(vidcap.get(cv2.CAP_PROP_FRAME_COUNT))
+    duration = frame_count/fps
 
-            for filename in list:
-                yolo.input = args.input[:args.input.find('/')+1] + filename
-                yolo.filename = filename
-                
-                image = cv2.imread(yolo.input)
+    logging.info(f' Video duration: {duration} seconds'
+                    f' - {frame_count} frames - {round(fps,2)} fps')
 
-                results = yolo.detect(image)
-                image_detected = results.draw(image, yolo.classes)
-
-                yolo.save(image_detected, f'{yolo.filename.split(".")[0]}-object-detection.jpg')
-
-                progress.update(task1, advance=1)
+    success, image = vidcap.read()
+    count = 0
+    success = True
+    yolo = yolo(args)
+    with Progress() as progress:
+        bar = progress.add_task("[red]Processing...", total=frame_count)
+        while success and count <= 10:
+            success, image = vidcap.read()
 
             logging.info(
-                f'- Completed!')
+                f' Read a new frame {count}: {success}')
+            results = yolo.detect(image)
+            image_detected = results.draw(image, yolo.classes, yolo.colors)
+
+            cv2.imwrite(args.out + '/' + "frame%d.jpg" %
+                        count, image_detected)     # save frame as JPEG file
+            count += 1
+            progress.update(bar, advance=1)
+
+        logging.info(
+            f' Completed!')
     
+if __name__ == "__main__":
+    
+    logging.info('Start Processing...')
+    os.makedirs(args.out, exist_ok=True)
+    
+    # Input is a image or directory of images
+    if os.path.isdir(args.input):
+        folder()        
+
     # Input is a single image
     elif args.input.lower().endswith('.jpg') or args.input.lower().endswith('.png'):
+        image()
         
-        logging.info(
-            f'- Input is a single image : {args.input}')
-        
-        yolo = yolo(args)
-        results = yolo.detect()
-        image = cv2.imread(yolo.input)
-
-        results = yolo.detect(image)
-        image_detected = results.draw(image, yolo.classes)
-        yolo.save(image_detected,
-                  f'{yolo.filename.split(".")[0]}-object-detection.jpg')
-
-        logging.info(
-            f'- Completed!')
     # Input is a video
     else:
-        logging.info(
-            f'- Input is a video : {args.input}')
-        name_video = args.input.split('/')[-1].split('.')[0]
-        args.out = os.path.join(args.out, name_video)
-        os.makedirs(args.out, exist_ok=True)        
-
-        # Read the video
-        vidcap = cv2.VideoCapture(args.input)
-
-        fps = vidcap.get(cv2.CAP_PROP_FPS)      # OpenCV v2.x used "CV_CAP_PROP_FPS"
-        frame_count = int(vidcap.get(cv2.CAP_PROP_FRAME_COUNT))
-        duration = frame_count/fps
-        
-        logging.info(f'- Video duration: {duration} seconds'
-                     f' - {frame_count} frames - {round(fps,2)} fps')
-
-        success, image = vidcap.read()
-        count = 0
-        success = True
-        yolo = yolo(args)
-        with Progress() as progress:
-            bar = progress.add_task("[red]Processing...", total=frame_count)
-            while success and count <= 10:
-                success, image = vidcap.read()
-                
-                logging.info(
-                    f'- Read a new frame {count}: {success}')
-                results = yolo.detect(image, 15)
-                image_detected = results.draw(image, yolo.classes, yolo.colors)
-    
-                cv2.imwrite(args.out + '/' + "frame%d.jpg" %
-                            count, image_detected)     # save frame as JPEG file
-                count += 1
-                progress.update(bar, advance=1)
-
-            logging.info(
-                f'- Completed!')
-        
-    logging.info('Finished!')
+        video()

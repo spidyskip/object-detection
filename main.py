@@ -31,7 +31,7 @@ def folder():
     args.input = args.input + '/'
 
     logging.info(
-        f' Porcessing all images in the directory  {args.input}')
+        f' Processing all images in the directory {args.input}')
 
     yolo = yolo(args)
     # Detect all image files in the folder

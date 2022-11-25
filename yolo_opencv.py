@@ -1,15 +1,13 @@
 ############################################
 # Object detection - YOLO - OpenCV
-# Author : Arun Ponnusamy   (July 16, 2018)
-# Website : http://www.arunponnusamy.com
+# Author : Antonio  (November 25, 2022)
+# Website : https://github.com/spidyskip
 ############################################
-
 
 import cv2
 import numpy as np
 import logging
 from datetime import datetime
-import dataclasses
 
 logging.basicConfig(filename='logs.txt', level=logging.DEBUG,
                     format='%(asctime)s %(levelname)-1s : %(message)s',
@@ -91,7 +89,7 @@ class results:
                                   (0, 255, 0), 2)
 
                     cv2.putText(image, label, (x-10, y-10),
-                                cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 2)
+                                cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
                 else:
                     label = str(classes[class_id])
                     color = colors[class_id]
@@ -99,12 +97,12 @@ class results:
                     cv2.rectangle(image, (x, y), (x + w, y + h), color, 2)
 
                     cv2.putText(image, label, (x-10, y-10),
-                                cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 2)
+                                cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
 
                 logging.info(
                     f' Detection - class: {class_id} - confidence: {confidence}')
                 logging.info(
-                    f' bbox - x: {x} - y: {y} - w: {w} - h: {h}')
+                    f' Detection - bbox - x: {x} - y: {y} - w: {w} - h: {h}')
         else:
             for box, class_id, confidence in zip(self.boxes, self.class_ids, self.confidences):
                 x = round(box[0])
@@ -122,7 +120,7 @@ class results:
                                   (0, 255, 0), 2)
 
                     cv2.putText(image, label, (x-10, y-10),
-                                cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 2)
+                                cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
                 else:
                     label = str(classes[class_id])
                     color = colors[class_id]
@@ -130,12 +128,12 @@ class results:
                     cv2.rectangle(image, (x, y), (x + w, y + h), color, 2)
 
                     cv2.putText(image, label, (x-10, y-10),
-                                cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 2)
+                                cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
 
                 logging.info(
                     f' Detection - class: {class_id} - confidence: {confidence}')
                 logging.info(
-                    f' bbox - x: {round(x)} - y: {round(y)} - w: {round(w)} - h: {round(h)}')
+                    f' Detection - bbox - x: {round(x)} - y: {round(y)} - w: {round(w)} - h: {round(h)}')
 
         return image
 

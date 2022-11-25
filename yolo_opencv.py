@@ -12,7 +12,7 @@ from datetime import datetime
 import dataclasses
 
 logging.basicConfig(filename='logs.txt', level=logging.DEBUG,
-                    format='%(asctime)s %(levelname)-1s %(message)s',
+                    format='%(asctime)s %(levelname)-1s : %(message)s',
                     datefmt='%Y/%m/%d %H:%M:%S')
 
 class results:
@@ -53,7 +53,7 @@ class results:
             results_NMS = results(0,
                                   boxes, class_ids, confidences)
         except Exception as e:
-            logging.info(f'- NMS not applied')
+            logging.info(f' NMS not applied')
             return self
 
         return results_NMS
@@ -102,9 +102,9 @@ class results:
                                 cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 2)
 
                 logging.info(
-                    f'- Detection - class: {class_id} - confidence: {confidence}')
+                    f' Detection - class: {class_id} - confidence: {confidence}')
                 logging.info(
-                    f'- bbox - x: {x} - y: {y} - w: {w} - h: {h}')
+                    f' bbox - x: {x} - y: {y} - w: {w} - h: {h}')
         else:
             for box, class_id, confidence in zip(self.boxes, self.class_ids, self.confidences):
                 x = round(box[0])
@@ -133,22 +133,23 @@ class results:
                                 cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 2)
 
                 logging.info(
-                    f'- Detection - class: {class_id} - confidence: {confidence}')
+                    f' Detection - class: {class_id} - confidence: {confidence}')
                 logging.info(
-                    f'- bbox - x: {round(x)} - y: {round(y)} - w: {round(w)} - h: {round(h)}')
+                    f' bbox - x: {round(x)} - y: {round(y)} - w: {round(w)} - h: {round(h)}')
 
         return image
 
 class yolo:
-    def __init__(self, input, model, weights, config, classes,  out ="out", search = None):
+    def __init__(self, input, model, classes,  out ="out", search = None):
         self.input = input
         self.out = out
         self.model = model
-        self.weights = weights
-        self.config = config
+        self.weights = model + '.weights'
+        self.config = model + '.cfg'
         self.classes = classes
         self.colors = self.setUpColors()
         self.filename = self.input.split('/')[-1]
+        self.net = self.load_model()
         self.results = None
         self.search = search
         self.image = None
@@ -160,6 +161,7 @@ class yolo:
         self.weights = args.model + '.weights'
         self.config = args.model + '.cfg'
         self.classes = args.classes
+        self.net = self.load_model()
         self.colors = self.setUpColors()
         self.filename = self.input.split('/')[-1]
         self.results = None
@@ -217,7 +219,11 @@ class yolo:
             path = self.out + '/' + path
 
         cv2.imwrite(path, image)
-        logging.info(f'- Saved image : {path}')
+        logging.info(f' Saved image : {path}')
+
+    def load_model(self):
+        net = cv2.dnn.readNet(self.weights, self.config)
+        return net
 
     def detect(self, image = None, search = None):
         
@@ -236,14 +242,18 @@ class yolo:
         Height = self.image.shape[0]
         scale = 0.00392
 
-        net = cv2.dnn.readNet(self.weights, self.config)
+        #net = self.load_model()
 
         blob = cv2.dnn.blobFromImage(
             self.image, scale, (416, 416), (0, 0, 0), True, crop=False)
 
-        net.setInput(blob)
-        
-        outs = net.forward(self.get_output_layers(net))
+        self.net.setInput(blob)
+        start = datetime.now()
+        outs = self.net.forward(self.get_output_layers(self.net))
+        end = datetime.now()
+
+        # show timing information on YOLO
+        logging.info(f' {self.model.split("/")[-1]} took {(end - start).total_seconds()} seconds')
 
         class_ids = []
         confidences = []
@@ -280,7 +290,7 @@ class yolo:
                     boxes.append([x, y, w, h])
                 
         if self.search is not None and self.search == self.get_class_name(class_id):
-            logging.info(f'- Found {self.search} in image')
+            logging.info(f' Found {self.search} in image')
         
         indices = cv2.dnn.NMSBoxes(boxes, confidences, conf_threshold, nms_threshold)
         

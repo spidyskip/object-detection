@@ -99,16 +99,20 @@ def video():
     yolo = yolo(args)
     with Progress() as progress:
         bar = progress.add_task("[red]Processing...", total=frame_count)
-        while success and count <= 10:
+        while success :
             success, image = vidcap.read()
 
             logging.info(
                 f' Read a new frame {count}: {success}')
             results = yolo.detect(image)
-            image_detected = results.draw(image, yolo.classes, yolo.colors)
-
-            cv2.imwrite(args.out + '/' + "frame%d.jpg" %
-                        count, image_detected)     # save frame as JPEG file
+            if yolo.search is not None and yolo.get_class_id(yolo.search) in results.class_ids:
+                image_detected = results.draw(image, yolo.classes, yolo.colors)
+                cv2.imwrite(args.out + '/' + "frame%d.jpg" %
+                            count, image_detected)     # save frame as JPEG file
+            elif yolo.search is None:
+                image_detected = results.draw(image, yolo.classes, yolo.colors)
+                cv2.imwrite(args.out + '/' + "frame%d.jpg" %
+                            count, image_detected)     # save frame as JPEG file
             count += 1
             progress.update(bar, advance=1)
 
@@ -118,7 +122,7 @@ def video():
 if __name__ == "__main__":
     
     logging.info('Start Processing...')
-    os.makedirs(args.out, exist_ok=True)
+    os.makedirs(args.out, exist_ok=True) # Create output folder
     
     # Input is a image or directory of images
     if os.path.isdir(args.input):

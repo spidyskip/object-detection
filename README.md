@@ -13,3 +13,4 @@ VIDEO:
 - draw only if a class is detected [ok]
 - draw simultaneously with video
 - create interface (?)
+- creato .py that contains folder(), image() and video()

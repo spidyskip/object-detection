@@ -3,6 +3,8 @@ import argparse
 from yolo_opencv import yolo
 import os
 import logging
+import numpy as np
+import skvideo.io
 
 import cv2
 from rich.progress import Progress
@@ -22,6 +24,8 @@ ap.add_argument('-cl', '--classes', required=True,
                 help='path to text file containing class names')
 ap.add_argument('--search', required=False, default=None,
                 help=f'look for a specific class')
+ap.add_argument('--create', required=False, default=False,
+                help=f'boolean to create a video')
 ap.add_argument('-o', '--out', required=False, default='out',
                 help='path to output image')
 args = ap.parse_args()
@@ -84,7 +88,7 @@ def video():
 
     # Read the video
     vidcap = cv2.VideoCapture(args.input)
-
+    
     # OpenCV v2.x used "CV_CAP_PROP_FPS"
     fps = vidcap.get(cv2.CAP_PROP_FPS)
     frame_count = int(vidcap.get(cv2.CAP_PROP_FRAME_COUNT))
@@ -97,6 +101,11 @@ def video():
     count = 0
     success = True
     yolo = yolo(args)
+    if args.create:
+        out_video = np.empty([frame_count,
+                              464, 848, 3], dtype=np.uint8)
+        out_video = out_video.astype(np.uint8)
+
     with Progress() as progress:
         bar = progress.add_task("[red]Processing...", total=frame_count)
         while success :
@@ -104,21 +113,48 @@ def video():
 
             logging.info(
                 f' Read a new frame {count}: {success}')
-            results = yolo.detect(image)
-            if yolo.search is not None and yolo.get_class_id(yolo.search) in results.class_ids:
-                image_detected = results.draw(image, yolo.classes, yolo.colors)
-                cv2.imwrite(args.out + '/' + "frame%d.jpg" %
-                            count, image_detected)     # save frame as JPEG file
-            elif yolo.search is None:
-                image_detected = results.draw(image, yolo.classes, yolo.colors)
-                cv2.imwrite(args.out + '/' + "frame%d.jpg" %
-                            count, image_detected)     # save frame as JPEG file
+            try:
+                results = yolo.detect(image)
+            except AttributeError:
+                break
+
+            image_detected = results.draw(image, yolo.classes, yolo.colors)
+            
+            if args.create:
+                try:
+                    out_video[count] = image_detected
+                except:
+                    pass
+            else:
+                cv2.imwrite(os.path.join(args.out, "frame%d.jpg" %
+                                     count), image_detected)     # save frame as JPEG file
+            
             count += 1
             progress.update(bar, advance=1)
 
+        if args.create:
+            # Writes the the output image sequences in a video file
+            skvideo.io.vwrite(os.path.join(yolo.out.split('/')[0], f"{yolo.filename.split('.')[0]}-detected.mp4"), out_video)
+
         logging.info(
             f' Completed!')
+
+def video_from_directory():
+       
+    out_video = np.empty([len(os.listdir(args.input)),
+                         464, 848, 3], dtype=np.uint8)
+    out_video =  out_video.astype(np.uint8)
     
+    for i in np.arange(0,len(os.listdir(args.input))):
+        try:
+            img = cv2.imread(os.path.join(args.input, f'frame{i}.jpg'))
+            out_video[i] = img
+        except:
+            pass
+
+    # Writes the the output image sequences in a video file
+    skvideo.io.vwrite("video.mp4", out_video)   
+
 if __name__ == "__main__":
     
     logging.info('Start Processing...')
@@ -126,7 +162,8 @@ if __name__ == "__main__":
     
     # Input is a image or directory of images
     if os.path.isdir(args.input):
-        folder()        
+        folder()   
+        #video_from_directory()     
 
     # Input is a single image
     elif args.input.lower().endswith('.jpg') or args.input.lower().endswith('.png'):

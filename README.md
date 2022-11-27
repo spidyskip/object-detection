@@ -11,6 +11,6 @@ VIDEO:
 - define main for video input
 - save image only if a class is detected 
 - draw only if a class is detected [ok]
-- draw simultaneously with video
+- draw simultaneously with video [ok]
 - create interface (?)
 - creato .py that contains folder(), image() and video()

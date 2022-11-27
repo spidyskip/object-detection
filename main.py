@@ -88,7 +88,7 @@ def video():
 
     # Read the video
     vidcap = cv2.VideoCapture(args.input)
-    
+
     # OpenCV v2.x used "CV_CAP_PROP_FPS"
     fps = vidcap.get(cv2.CAP_PROP_FPS)
     frame_count = int(vidcap.get(cv2.CAP_PROP_FRAME_COUNT))
@@ -139,22 +139,6 @@ def video():
         logging.info(
             f' Completed!')
 
-def video_from_directory():
-       
-    out_video = np.empty([len(os.listdir(args.input)),
-                         464, 848, 3], dtype=np.uint8)
-    out_video =  out_video.astype(np.uint8)
-    
-    for i in np.arange(0,len(os.listdir(args.input))):
-        try:
-            img = cv2.imread(os.path.join(args.input, f'frame{i}.jpg'))
-            out_video[i] = img
-        except:
-            pass
-
-    # Writes the the output image sequences in a video file
-    skvideo.io.vwrite("video.mp4", out_video)   
-
 if __name__ == "__main__":
     
     logging.info('Start Processing...')
@@ -162,8 +146,7 @@ if __name__ == "__main__":
     
     # Input is a image or directory of images
     if os.path.isdir(args.input):
-        folder()   
-        #video_from_directory()     
+        folder()  
 
     # Input is a single image
     elif args.input.lower().endswith('.jpg') or args.input.lower().endswith('.png'):

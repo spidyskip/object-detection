@@ -257,14 +257,16 @@ class results:
                     cv2.putText(image, label, (x-10, y-10),
                                 cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
                 
-                # draw something on the image
+                # center point
                 xCenter = box[0] + box[2]/2
                 yCenter = box[1] + box[3]/2
                 radius = round(box[2] * 0.05)
+
+                # draw something on the image
                 #cv2.circle(image, (round(xCenter), round(yCenter)),round(radius), (0, 255, 0), 2)
-                cv2.line(image, (round(xCenter), round(yCenter)-radius), (round(xCenter), round(yCenter)+radius), (0, 255, 0), 2)
-                cv2.line(image, (round(xCenter)-radius, round(yCenter)),
-                         (round(xCenter)+radius, round(yCenter)), (0, 255, 0), 2)
+                #cv2.line(image, (round(xCenter), round(yCenter)-radius), (round(xCenter), round(yCenter)+radius), (0, 255, 0), 2)
+                #cv2.line(image, (round(xCenter)-radius, round(yCenter)),
+                #         (round(xCenter)+radius, round(yCenter)), (0, 255, 0), 2)
 
                 logging.info(
                     f' Detection - class: {class_id} - confidence: {confidence}')

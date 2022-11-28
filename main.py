@@ -45,7 +45,7 @@ def folder():
         task1 = progress.add_task("[blue]Processing...", total=len(list))
 
         for filename in list:
-            yolo.input = args.input[:args.input.find('/')+1] + filename
+            yolo.input = os.path.join(args.input, filename)
             yolo.filename = filename
 
             image = cv2.imread(yolo.input)
@@ -93,7 +93,9 @@ def video():
     fps = vidcap.get(cv2.CAP_PROP_FPS)
     frame_count = int(vidcap.get(cv2.CAP_PROP_FRAME_COUNT))
     duration = frame_count/fps
-
+    width = int(vidcap.get(cv2.CAP_PROP_FRAME_WIDTH))
+    height = int(vidcap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+    
     logging.info(f' Video duration: {duration} seconds'
                     f' - {frame_count} frames - {round(fps,2)} fps')
 
@@ -103,7 +105,7 @@ def video():
     yolo = yolo(args)
     if args.create:
         out_video = np.empty([frame_count,
-                              464, 848, 3], dtype=np.uint8)
+                              height, width, 3], dtype=np.uint8)
         out_video = out_video.astype(np.uint8)
 
     with Progress() as progress:

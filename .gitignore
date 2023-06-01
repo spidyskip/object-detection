@@ -1,7 +1,8 @@
 __pycache__/
 classes.txt
 input/
-logs.txt
+logs/
 models/
 out/
-tools/
+tools/video_from_directory.py
+frontend/

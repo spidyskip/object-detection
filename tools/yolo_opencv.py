@@ -9,9 +9,6 @@ import numpy as np
 import logging
 from datetime import datetime
 
-logging.basicConfig(filename='logs.txt', level=logging.DEBUG,
-                    format='%(asctime)s %(levelname)-1s : %(message)s',
-                    datefmt='%Y/%m/%d %H:%M:%S')
 
 class yolo:
     def __init__(self, input, model, classes,  out ="out", search = None):
@@ -41,6 +38,20 @@ class yolo:
         self.results = None
         self.search = args.search
         self.image = None  
+    
+    def __init__(self, args):
+        self.input = None
+        self.out = args.out
+        self.model = args.model
+        self.weights = args.model + '.weights'
+        self.config = args.model + '.cfg'
+        self.classes = args.classes
+        self.net = self.load_model()
+        self.colors = self.setUpColors()
+        self.filename = None
+        self.results = None
+        self.search = args.search
+        self.image = None
     
     def get_class_id(self, class_name):
         try:
@@ -86,6 +97,16 @@ class yolo:
 
         return COLORS
 
+    def setUpSearch(self, search):
+        self.search = search
+
+    def setUpInput(self, input):
+        self.input = input
+        self.filename = self.input.split('/')[-1]
+    
+    def loadImage(self, input):
+        self.image = cv2.imread(input)
+
     def save(self, image, path = None):
         if path is None:
             path = self.out + '/'
@@ -108,7 +129,7 @@ class yolo:
                 self.search = search
         
         if image is None:
-            self.image = cv2.imread(self.input)
+            self.loadImage(self.input)
         else:
             self.image = image
 

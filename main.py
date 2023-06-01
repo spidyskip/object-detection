@@ -1,6 +1,6 @@
 
 import argparse
-from yolo_opencv import yolo
+from tools.yolo_opencv import yolo
 import os
 import logging
 import numpy as np
@@ -12,8 +12,8 @@ from rich.progress import Progress
 range = 100
 
 ap = argparse.ArgumentParser()
-ap.add_argument('-i', '--input', required=True,
-                help='path to input image')
+ap.add_argument('-i', '--input', required=False, default= None,
+                help='path to input image/folder/video')
 ap.add_argument('-model', '--model', required=True,
                 help='path to model - weights, cfg')
 ap.add_argument('-c', '--config', required=False,
@@ -30,12 +30,18 @@ ap.add_argument('-o', '--out', required=False, default='out',
                 help='path to output image')
 args = ap.parse_args()
 
+os.makedirs('logs', exist_ok=True)  # Create logs folder
+logging.basicConfig(filename='logs/kpi.log', level=logging.DEBUG,
+                    format='%(asctime)s %(levelname)-1s : %(message)s',
+                    datefmt='%Y/%m/%d %H:%M:%S')
+
+
 def folder():
     global yolo, list
     args.input = args.input + '/'
 
     logging.info(
-        f' Processing all images in the directory {args.input}')
+        f' Processing all images in the directory: {args.input}')
 
     yolo = yolo(args)
     # Detect all image files in the folder
@@ -49,12 +55,14 @@ def folder():
             yolo.filename = filename
 
             image = cv2.imread(yolo.input)
-
+            logging.info(
+                f' Image uploaded {yolo.filename}')
+            # Detect image
             results = yolo.detect(image)
             image_detected = results.draw(image, yolo.classes)
 
             yolo.save(image_detected,
-                        f'{yolo.filename.split(".")[0]}-object-detection.jpg')
+                        f'{yolo.filename.split(".")[0]}-{yolo.model.split("/")[-1]}.jpg')
 
             progress.update(task1, advance=1)
 
@@ -70,10 +78,9 @@ def image():
     results = yolo.detect()
     image = cv2.imread(yolo.input)
 
-    results = yolo.detect(image)
     image_detected = results.draw(image, yolo.classes)
     yolo.save(image_detected,
-              f'{yolo.filename.split(".")[0]}-object-detection.jpg')
+              f'{yolo.filename.split(".")[0]}-{yolo.model.split("/")[-1]}.jpg')
 
     logging.info(
         f' Completed!')
@@ -147,13 +154,20 @@ if __name__ == "__main__":
     os.makedirs(args.out, exist_ok=True) # Create output folder
     
     # Input is a image or directory of images
-    if os.path.isdir(args.input):
-        folder()  
-
-    # Input is a single image
-    elif args.input.lower().endswith('.jpg') or args.input.lower().endswith('.png'):
-        image()
-        
-    # Input is a video
+    
+    if args.input is None:
+        logging.info(
+            f' Missing input')
+        yolo = yolo(args)
     else:
-        video()
+        if os.path.isdir(args.input):
+            folder()  
+
+        # Input is a single image
+        elif args.input.lower().endswith('.jpg') or args.input.lower().endswith('.png'):
+            image()
+            
+        # Input is a video
+        else:
+            video()
+ 

@@ -11,33 +11,50 @@ from datetime import datetime
 
 
 class yolo:
-    def __init__(self, input, model, classes,  out ="out", search = None):
+      
+    def __init__(self, args=None):
+        if args is None:
+            return 
+        else:           
+            self.input = args.input
+            self.out = args.out
+            self.model = args.model
+            self.weights = args.model + '.weights'
+            self.config = args.model + '.cfg'
+            self.classes = args.classes
+            self.net = self.load_model()
+            self.colors = self.setUpColors()
+            self.filename = self.input.split('/')[-1]
+            self.results = None
+            self.search = args.search
+            self.image = None  
+    
+    def setUp(self, input=None, model=None, classes=None,  out ="out", search = None):
         self.input = input
         self.out = out
         self.model = model
-        self.weights = model + '.weights'
-        self.config = model + '.cfg'
-        self.classes = classes
+        try:
+            self.weights = model + '.weights'
+            self.config = model + '.cfg'
+            self.net = self.load_model()
+        except:
+            self.net = None
+            self.weights = None
+            self.config = None
+            logging.error(' Weights not loaded')
+        try:
+            self.classes = classes
+        except:
+            logging.error(' Specify classes file')
         self.colors = self.setUpColors()
-        self.filename = self.input.split('/')[-1]
-        self.net = self.load_model()
+        try:
+            self.filename = self.input.split('/')[-1]
+        except:
+            self.filename = None
+            logging.error(' Filename not defined')
         self.results = None
         self.search = search
         self.image = None
-    
-    def __init__(self, args):
-        self.input = args.input
-        self.out = args.out
-        self.model = args.model
-        self.weights = args.model + '.weights'
-        self.config = args.model + '.cfg'
-        self.classes = args.classes
-        self.net = self.load_model()
-        self.colors = self.setUpColors()
-        self.filename = self.input.split('/')[-1]
-        self.results = None
-        self.search = args.search
-        self.image = None  
     
     def get_class_id(self, class_name):
         try:
@@ -90,7 +107,12 @@ class yolo:
         self.input = input
         self.filename = self.input.split('/')[-1]
     
+    def setUpClasses(self, classes):
+        self.classes = classes
+        self.colors = self.setUpColors()
+    
     def loadImage(self, input):
+        self.setUpInput(input)
         self.image = cv2.imread(input)
 
     def save(self, image, path = None):
@@ -103,8 +125,19 @@ class yolo:
         logging.info(f' Saved image : {path}')
 
     def load_model(self):
-        net = cv2.dnn.readNet(self.weights, self.config)
+        try:
+            net = cv2.dnn.readNet(self.weights, self.config)
+            self.net = net
+        except:
+            net = None
+            logging.error(' Model not found')
         return net
+
+    def load_specific_model(self, model):
+        self.model = model
+        self.weights = model + '.weights'
+        self.config = model + '.cfg'
+        self.net = cv2.dnn.readNet(self.weights, self.config)
 
     def detect(self, image = None, search = None):
         

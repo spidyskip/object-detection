@@ -39,20 +39,6 @@ class yolo:
         self.search = args.search
         self.image = None  
     
-    def __init__(self, args):
-        self.input = None
-        self.out = args.out
-        self.model = args.model
-        self.weights = args.model + '.weights'
-        self.config = args.model + '.cfg'
-        self.classes = args.classes
-        self.net = self.load_model()
-        self.colors = self.setUpColors()
-        self.filename = None
-        self.results = None
-        self.search = args.search
-        self.image = None
-    
     def get_class_id(self, class_name):
         try:
             classes = None

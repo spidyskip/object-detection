@@ -14,14 +14,14 @@ range = 100
 ap = argparse.ArgumentParser()
 ap.add_argument('-i', '--input', required=False, default= None,
                 help='path to input image/folder/video')
-ap.add_argument('-model', '--model', required=True,
+ap.add_argument('-model', '--model', default = "models/yolov3/yolov3", required=False,
                 help='path to model - weights, cfg')
+ap.add_argument('-cl', '--classes', default="models/yolov3/classes.txt", required=False,
+                help='path to text file containing class names')
 ap.add_argument('-c', '--config', required=False,
                 help='path to yolo config file')
 ap.add_argument('-w', '--weights', required=False,
                 help='path to yolo pre-trained weights')
-ap.add_argument('-cl', '--classes', required=True,
-                help='path to text file containing class names')
 ap.add_argument('--search', required=False, default=None,
                 help=f'look for a specific class')
 ap.add_argument('--create', required=False, default=False,

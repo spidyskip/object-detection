@@ -13,21 +13,11 @@ from datetime import datetime
 class yolo:
       
     def __init__(self, args=None):
+
         if args is None:
-            return 
-        else:           
-            self.input = args.input
-            self.out = args.out
-            self.model = args.model
-            self.weights = args.model + '.weights'
-            self.config = args.model + '.cfg'
-            self.classes = args.classes
-            self.net = self.load_model()
-            self.colors = self.setUpColors()
-            self.filename = self.input.split('/')[-1]
-            self.results = None
-            self.search = args.search
-            self.image = None  
+            self.setUp() 
+        else:      
+            self.setUp(input=args.input, model=args.model, classes=args.classes, out=args.out, search=args.search)   
     
     def setUp(self, input=None, model=None, classes=None,  out ="out", search = None):
         self.input = input
@@ -44,15 +34,15 @@ class yolo:
             logging.error(' Weights not loaded')
         try:
             self.classes = classes
+            self.colors = self.setUpColors()
         except:
             logging.error(' Specify classes file')
-        self.colors = self.setUpColors()
         try:
             self.filename = self.input.split('/')[-1]
         except:
             self.filename = None
             logging.error(' Filename not defined')
-        self.results = None
+        self.history = []
         self.search = search
         self.image = None
     
@@ -84,7 +74,7 @@ class yolo:
                             for i in net.getUnconnectedOutLayers()]
 
         return output_layers
-    
+
     def get_classes(self):
         classes = None
 
@@ -160,8 +150,11 @@ class yolo:
 
         blob = cv2.dnn.blobFromImage(
             self.image, scale, (416, 416), (0, 0, 0), True, crop=False)
-
-        self.net.setInput(blob)
+        try:
+            self.net.setInput(blob)
+        except:
+            logging.error(' Model not loaded')
+            return None
         start = datetime.now()
         outs = self.net.forward(self.get_output_layers(self.net))
         end = datetime.now()
@@ -208,7 +201,7 @@ class yolo:
             logging.info(f' Found {self.search} in image')
         
         indices = cv2.dnn.NMSBoxes(boxes, confidences, conf_threshold, nms_threshold)
-        
+        self.history.append([[indices, boxes, class_ids, confidences], datetime.now()])
         return results(indices, boxes, class_ids, confidences)
 
 class results:
@@ -218,6 +211,24 @@ class results:
         self.class_ids = class_ids
         self.confidences = confidences
 
+    def get_class_name(self, classes):
+        classes_var = None
+        with open(classes, 'r') as f:
+            classes_var = [line.strip() for line in f.readlines()]
+        class_names=[]
+        for i in self.class_ids:
+            class_names.append(classes_var[i])
+        return class_names
+    
+    def toString(self):
+        s = ''
+        if type(self.indices) == int:
+            s = f' {self.class_ids[self.indices]} : {self.confidences[self.indices]}'
+        else:
+            for i in self.indices:
+                s += f' {self.class_ids[i]} : {self.confidences[i]}'
+        return s
+    
     def get_NMS(self):  # Get result after NMS
         boxes = []
         class_ids = []
@@ -345,3 +356,12 @@ class results:
                     f' Detection - bbox - x: {round(x)} - y: {round(y)} - w: {round(w)} - h: {round(h)}')
 
         return image
+    
+    def get_class_id(self, class_name, classes):
+        with open(classes, 'r') as f:
+            classes = [line.strip() for line in f.readlines()]
+            class_id = classes.index(class_name)
+    
+        return class_id
+
+    

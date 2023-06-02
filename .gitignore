@@ -6,3 +6,6 @@ models/
 out/
 tools/video_from_directory.py
 frontend/
+test.py
+models/yolov3.weights
+models/yolov3.cfg

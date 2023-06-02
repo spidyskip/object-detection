@@ -16,7 +16,7 @@ ap.add_argument('-i', '--input', required=False, default= None,
                 help='path to input image/folder/video')
 ap.add_argument('-model', '--model', default = "models/yolov3/yolov3", required=False,
                 help='path to model - weights, cfg')
-ap.add_argument('-cl', '--classes', default="models/yolov3/classes.txt", required=False,
+ap.add_argument('-cl', '--classes', default="models/yolov3/coco.names", required=False,
                 help='path to text file containing class names')
 ap.add_argument('-c', '--config', required=False,
                 help='path to yolo config file')

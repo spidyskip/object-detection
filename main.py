@@ -76,8 +76,8 @@ def image():
         f' Input is a single image : {args.input}')
 
     yolo = yolo(args)
-    results = yolo.detect()
     image = cv2.imread(yolo.input)
+    results = yolo.detect(image)    
 
     image_detected = results.draw_bbox(image, yolo.classes)
     yolo.save(image_detected,

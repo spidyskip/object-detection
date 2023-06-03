@@ -265,6 +265,8 @@ class results:
         return results_NMS
 
     def draw_bbox(self, img, classes=None, colors=None, NMS=True):  # Draw bounding boxes on the image
+        if len(self.indices) == 0:
+            return img
         image = img.copy()
         if classes is not None:
             with open(classes, 'r') as f:
@@ -301,6 +303,10 @@ class results:
                 #cv2.line(image, (round(xCenter), round(yCenter)-radius), (round(xCenter), round(yCenter)+radius), color, 2)
                 #cv2.line(image, (round(xCenter)-radius, round(yCenter)),
                 #         (round(xCenter)+radius, round(yCenter)), color, 2)
+                logging.info(
+                    f' Detection - class: {class_id} - confidence: {confidence}')
+                logging.info(
+                    f' Detection - bbox - x: {round(x)} - y: {round(y)} - w: {round(w)} - h: {round(h)}')
 
         else:
             for box, class_id, confidence in zip(self.boxes, self.class_ids, self.confidences):
@@ -315,10 +321,10 @@ class results:
                     cv2.putText(image, label, (x-10, y-10),
                                 cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
 
-        logging.info(
-            f' Detection - class: {class_id} - confidence: {confidence}')
-        logging.info(
-            f' Detection - bbox - x: {round(x)} - y: {round(y)} - w: {round(w)} - h: {round(h)}')
+                logging.info(
+                    f' Detection - class: {class_id} - confidence: {confidence}')
+                logging.info(
+                    f' Detection - bbox - x: {round(x)} - y: {round(y)} - w: {round(w)} - h: {round(h)}')
 
         return image
 

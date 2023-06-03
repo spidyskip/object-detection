@@ -264,22 +264,19 @@ class results:
 
         return results_NMS
 
-    def draw(self, img, classes=None, colors=None, NMS=True):  # Draw bounding boxes on the image
+    def draw_bbox(self, img, classes=None, colors=None, NMS=True):  # Draw bounding boxes on the image
         image = img.copy()
         if classes is not None:
             with open(classes, 'r') as f:
                 classes = [line.strip() for line in f.readlines()]
 
             COLORS = np.random.uniform(0, 255, size=(len(classes), 3))
-
+        
         if NMS:
+            logging.info(f' NMS applied')
             for i in self.indices:
 
-                try:
-                    box = self.boxes[i]
-                except:
-                    i = i[0]
-                    box = self.boxes[i]
+                box = self.boxes[i]
 
                 x = round(box[0])
                 y = round(box[1])
@@ -288,41 +285,23 @@ class results:
                 class_id = self.class_ids[i]
                 confidence = self.confidences[i]
 
-                if classes is None:
-                    cv2.rectangle(image, (x, y), (x + w, y + h),
-                                  (0, 255, 0), 2)
-                elif colors is None:
-                    label = str(classes[class_id])
-
-                    cv2.rectangle(image, (x, y), (x + w, y + h),
-                                  (0, 255, 0), 2)
-
-                    cv2.putText(image, label, (x-10, y-10),
-                                cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
-                else:
-                    label = str(classes[class_id])
-                    color = colors[class_id]
-
-                    cv2.rectangle(image, (x, y), (x + w, y + h), color, 2)
-
+                color, label = self.select_color(class_id, colors, classes)
+                cv2.rectangle(image, (x, y), (x + w, y + h), color, 2)
+                if label is not None:
                     cv2.putText(image, label, (x-10, y-10),
                                 cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
-                
+                    
                 # center point
                 xCenter = box[0] + box[2]/2
                 yCenter = box[1] + box[3]/2
                 radius = round(box[2] * 0.05)
 
                 # draw something on the image
-                #cv2.circle(image, (round(xCenter), round(yCenter)),round(radius), (0, 255, 0), 2)
-                #cv2.line(image, (round(xCenter), round(yCenter)-radius), (round(xCenter), round(yCenter)+radius), (0, 255, 0), 2)
+                #cv2.circle(image, (round(xCenter), round(yCenter)),round(radius), color, 2)
+                #cv2.line(image, (round(xCenter), round(yCenter)-radius), (round(xCenter), round(yCenter)+radius), color, 2)
                 #cv2.line(image, (round(xCenter)-radius, round(yCenter)),
-                #         (round(xCenter)+radius, round(yCenter)), (0, 255, 0), 2)
+                #         (round(xCenter)+radius, round(yCenter)), color, 2)
 
-                logging.info(
-                    f' Detection - class: {class_id} - confidence: {confidence}')
-                logging.info(
-                    f' Detection - bbox - x: {x} - y: {y} - w: {w} - h: {h}')
         else:
             for box, class_id, confidence in zip(self.boxes, self.class_ids, self.confidences):
                 x = round(box[0])
@@ -330,32 +309,42 @@ class results:
                 w = round(box[2])
                 h = round(box[3])
 
-                if classes is None:
-                    cv2.rectangle(image, (x, y), (x + w, y + h),
-                                  (0, 255, 0), 2)
-                elif colors == None:
-                    label = str(classes[class_id])
-
-                    cv2.rectangle(image, (x, y), (x + w, y + h),
-                                  (0, 255, 0), 2)
-
-                    cv2.putText(image, label, (x-10, y-10),
-                                cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
-                else:
-                    label = str(classes[class_id])
-                    color = colors[class_id]
-
-                    cv2.rectangle(image, (x, y), (x + w, y + h), color, 2)
-
+                color, label = self.select_color(class_id, colors, classes)
+                cv2.rectangle(image, (x, y), (x + w, y + h), color, 2)
+                if label is not None:
                     cv2.putText(image, label, (x-10, y-10),
                                 cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
 
-                logging.info(
-                    f' Detection - class: {class_id} - confidence: {confidence}')
-                logging.info(
-                    f' Detection - bbox - x: {round(x)} - y: {round(y)} - w: {round(w)} - h: {round(h)}')
+        logging.info(
+            f' Detection - class: {class_id} - confidence: {confidence}')
+        logging.info(
+            f' Detection - bbox - x: {round(x)} - y: {round(y)} - w: {round(w)} - h: {round(h)}')
 
         return image
+
+    def select_color(self, class_id, colors, classes):
+        if classes is None:
+            label = None
+            # Classes not defined
+            if colors is not None and type(colors) == tuple:
+                color = colors
+            else:
+                color = (0, 255, 0)
+        elif colors is None:
+            # Classes defined but not colors - Default green color
+            label = str(classes[class_id])
+            color = (0, 255, 0)
+        else:
+            # Classes and colors are defined
+            label = str(classes[class_id])
+            # Check if colors is defined for all classes or specified
+            if len(colors) == len(classes):
+                color = colors[class_id]
+            else:
+                # Colors are not provided for all classes
+                color = colors
+
+        return color, label
     
     def get_class_id(self, class_name, classes):
         with open(classes, 'r') as f:

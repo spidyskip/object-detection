@@ -59,7 +59,8 @@ def folder():
                 f' Image uploaded {yolo.filename}')
             # Detect image
             results = yolo.detect(image)
-            image_detected = results.draw(image, yolo.classes)
+            image_detected = results.draw_bbox(
+                image, yolo.classes, yolo.colors)
 
             yolo.save(image_detected,
                         f'{yolo.filename.split(".")[0]}-{yolo.model.split("/")[-1]}.jpg')
@@ -78,7 +79,7 @@ def image():
     results = yolo.detect()
     image = cv2.imread(yolo.input)
 
-    image_detected = results.draw(image, yolo.classes)
+    image_detected = results.draw_bbox(image, yolo.classes)
     yolo.save(image_detected,
               f'{yolo.filename.split(".")[0]}-{yolo.model.split("/")[-1]}.jpg')
 
@@ -127,7 +128,7 @@ def video():
             except AttributeError:
                 break
 
-            image_detected = results.draw(image, yolo.classes, yolo.colors)
+            image_detected = results.draw_bbox(image, yolo.classes, yolo.colors)
             
             if args.create:
                 try:
